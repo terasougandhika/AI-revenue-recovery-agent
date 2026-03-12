@@ -1,0 +1,33 @@
+# ─── EVENT GENERATOR ──────────────────────────────────────────
+confluent-kafka==2.3.0          # Kafka/Redpanda producer & consumer
+
+# ─── STREAM PROCESSING ────────────────────────────────────────
+pyspark==3.5.0                  # Distributed stream processing
+
+# ─── DATABASE ─────────────────────────────────────────────────
+psycopg2-binary==2.9.9          # PostgreSQL driver
+pgvector==0.2.5                 # pgvector Python client
+sqlalchemy==2.0.25              # ORM + connection pooling
+
+# ─── AI AGENTS ────────────────────────────────────────────────
+langchain==0.1.9                # LLM toolkit (base)
+langchain-community==0.0.24     # Ollama integration
+langgraph==0.0.26               # Agent workflow graphs
+langchain-google-genai==0.0.9   # Gemini integration
+ollama==0.1.7                   # Ollama Python client
+
+# ─── RAG / EMBEDDINGS ─────────────────────────────────────────
+sentence-transformers==2.5.1    # Text → vector embeddings
+numpy==1.26.4                   # Vector math
+
+# ─── DASHBOARD ────────────────────────────────────────────────
+streamlit==1.32.0               # Web dashboard
+plotly==5.19.0                  # Charts
+pandas==2.2.0                   # Data manipulation
+
+# ─── UTILITIES ────────────────────────────────────────────────
+python-dotenv==1.0.1            # Load .env files
+pydantic==2.6.1                 # Data validation
+loguru==0.7.2                   # Better logging
+tenacity==8.2.3                 # Retry logic
+httpx==0.26.0                   # HTTP client

@@ -1,0 +1,101 @@
+version: "3.8"
+
+services:
+
+  # ─── REDPANDA (Kafka-compatible message broker) ───────────────
+  redpanda:
+    image: redpandadata/redpanda:latest
+    container_name: redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --node-id 0
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+    ports:
+      - "19092:19092"    # External Kafka API
+      - "18082:18082"    # Pandaproxy REST API
+      - "18081:18081"    # Schema Registry
+      - "9644:9644"      # Admin API
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── REDPANDA CONSOLE (Web UI) ────────────────────────────────
+  redpanda-console:
+    image: redpandadata/console:latest
+    container_name: redpanda-console
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    ports:
+      - "8080:8080"      # Web UI → open http://localhost:8080
+    environment:
+      - KAFKA_BROKERS=redpanda:9092
+
+  # ─── REDPANDA TOPIC SETUP ─────────────────────────────────────
+  redpanda-setup:
+    image: redpandadata/redpanda:latest
+    container_name: redpanda-setup
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command: |
+      "
+      echo 'Creating Redpanda topics...'
+      rpk topic create customer-events \
+        --brokers redpanda:9092 \
+        --partitions 3 \
+        --replicas 1 \
+        --topic-config retention.ms=604800000
+      echo 'Topics created successfully!'
+      rpk topic list --brokers redpanda:9092
+      "
+    restart: "no"
+
+  # ─── POSTGRESQL + PGVECTOR ────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: postgres
+    environment:
+      POSTGRES_DB:       recovery_db
+      POSTGRES_USER:     recovery_user
+      POSTGRES_PASSWORD: recovery_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recovery_user -d recovery_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── PGADMIN (Optional DB UI) ─────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5050:80"        # Web UI → open http://localhost:5050
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  redpanda_data:
+  postgres_data:
+  pgadmin_data:
